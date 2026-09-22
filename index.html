@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCargas | Painel de Telemetria e Infraestrutura Pro</title>
+  <link href="https://googleapis.com" rel="stylesheet">
+  
+  <style>
+    /* 🌟 WHITE MODE PREMIUM THEME */
+    :root {
+      --bg-global: #F4F4F6;
+      --bg-card: #FFFFFF;
+      --purple-neon: #8A05BE;
+      --purple-dim: #EED6FF;
+      --text-main: #1C1C1E;
+      --text-muted: #6E6E73;
+      --border-card: rgba(138, 5, 190, 0.08);
+      --shadow-clean: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      --status-green: #00C853;
+      --status-yellow: #FFD600;
+      --status-red: #FF1744;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+    body { background-color: var(--bg-global); color: var(--text-main); padding: 2rem; overflow-x: hidden; }
+    .dashboard-container { max-width: 1400px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; border-bottom: 1px solid rgba(0, 0, 0, 0.05); padding-bottom: 1.5rem; }
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.5px; color: #000000; }
+    h1 span { color: var(--purple-neon); }
+    .btn-global { background: var(--purple-neon); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(138, 5, 190, 0.2); }
+    .btn-global:hover { background: #70029E; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(138, 5, 190, 0.3); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+    .kpi-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 1.5rem; box-shadow: var(--shadow-clean); }
+    .kpi-card p { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; margin-bottom: 0.5rem; }
+    .kpi-card h2 { font-size: 2.5rem; font-weight: 700; color: #000000; }
+    .uf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    .uf-card { background: var(--bg-card); border: 1px solid rgba(0, 0, 0, 0.04); border-radius: 14px; padding: 1.5rem; box-shadow: var(--shadow-clean); transition: all 0.2s ease; }
+    .uf-card:hover { border: 1px solid var(--purple-neon); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06); }
+    .uf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .uf-title { font-size: 1.15rem; font-weight: 700; color: #000000; }
+    .badge-status { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .bg-green { background-color: var(--status-green); box-shadow: 0 0 8px rgba(0, 200, 83, 0.4); }
+    .bg-yellow { background-color: var(--status-yellow); box-shadow: 0 0 8px rgba(255, 214, 0, 0.4); }
+    .bg-red { background-color: var(--status-red); box-shadow: 0 0 8px rgba(255, 23, 68, 0.4); }
+    .sheet-link { display: flex; align-items: center; font-size: 0.85rem; color: var(--purple-neon); margin-bottom: 0.75rem; text-decoration: none; font-weight: 500; }
+    .sheet-link:hover { text-decoration: underline; }
+    .diagnostic-box { border-top: 1px solid rgba(0, 0, 0, 0.05); margin-top: 1rem; padding-top: 1rem; font-size: 0.9rem; }
+    .diagnostic-item { display: flex; justify-content: space-between; margin-bottom: 0.6rem; }
+    .diagnostic-item span:first-child { color: var(--text-muted); }
+    .diagnostic-item span:last-child { font-weight: 600; color: #000000; }
+    .diagnostic-item a.sheet-link { margin-bottom: 0; display: inline; }
+    .action-row-card { margin-top: 1.25rem; display: flex; justify-content: flex-end; }
+    .btn-action-sm { background: var(--purple-dim); border: none; color: var(--purple-neon); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+    .btn-action-sm:hover { background: var(--purple-neon); color: white; }
+    .filter-row { display: flex; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .btn-filter { background: #E5E5EA; color: var(--text-main); border: none; padding: 0.5rem 1.25rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+    .btn-filter:hover { background: var(--purple-dim); color: var(--purple-neon); }
+    .btn-filter.active { background: var(--purple-neon); color: #FFFFFF; box-shadow: 0 4px 12px rgba(138, 5, 190, 0.2); }
+    
+    /* 📈 COMPONENTE CSS: TELEMETRIA */
+    .cells-progress-container { margin-top: 0.6rem; font-size: 0.75rem; }
+    .cells-label-row { display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 500; }
+    .cells-bg-bar { background: #E5E5EA; width: 100%; height: 6px; border-radius: 4px; overflow: hidden; }
+    .cells-fill-bar { width: 0%; height: 100%; border-radius: 4px; transition: width 0.4s ease, background-color 0.4s ease; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 9999; }
+    .modal-box { background: #FFFFFF; width: 600px; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); border: 1px solid rgba(0, 0, 0, 0.05); }
+    .modal-box h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: #000000; }
+    .progress-wrapper { background: #E5E5EA; width: 100%; height: 8px; border-radius: 10px; margin-bottom: 1.5rem; overflow: hidden; }
+    .progress-bar { width: 0%; height: 100%; background: var(--purple-neon); border-radius: 10px; transition: width 0.3s ease; }
+    .terminal-box { background: #1C1C1E; border-radius: 8px; padding: 1rem; height: 200px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; color: #00E676; line-height: 1.4; margin-bottom: 1.5rem; text-align: left; }
+    .terminal-box .log-err { color: #FF1744; }
+    .terminal-box .log-info { color: #FFD600; }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <header>
+      <h1><span>SmartCargas</span> | TELEMETRIA E INFRAESTRUTURA PRO</h1>
+      <button class="btn-global" onclick="carregarDadosGlobais()">Atualizar Servidores</button>
+    </header>
+
+    <!-- 🔍 FILTROS REGIONAIS & BARRA DE BUSCA REATIVA INTEGRADA -->
+    <div class="filter-row" style="align-items: center;">
+      <input type="text" id="input-busca-uf" onkeyup="buscarUfPorTexto()" placeholder="🔍 Pesquisar por Estado ou UF..." style="background: #E5E5EA; border: 1px solid rgba(0,0,0,0.03); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500; outline: none; width: 240px; margin-right: 0.5rem; transition: all 0.2s ease;">
+      <button class="btn-filter active" onclick="filtrarRegiao('TODOS', this)">Todos</button>
+      <button class="btn-filter" onclick="filtrarRegiao('SUDESTE', this)">Sudeste</button>
+      <button class="btn-filter" onclick="filtrarRegiao('SUL', this)">Sul</button>
+      <button class="btn-filter" onclick="filtrarRegiao('NORDESTE', this)">Nordeste</button>
+      <button class="btn-filter" onclick="filtrarRegiao('CENTRO-OESTE', this)">Centro-Oeste</button>
+      <button class="btn-filter" onclick="filtrarRegiao('NORTE', this)">Norte</button>
+      <button class="btn-filter" id="btn-filtro-criticos" onclick="filtrarApenasCriticos(this)" style="border: 1px solid rgba(255, 23, 68, 0.2); color: var(--status-red);">⚠️ Apenas Críticos</button>
+    </div>
+
+    <!-- 📊 PAINEL DE CONTROLE DE INFRAESTRUTURA METRICS (KPIs) -->
+    <div class="kpi-row">
+      <div class="kpi-card"><p>Nós Ativos</p><h2 id="kpi-total-sheets">54</h2></div>
+      <div class="kpi-card"><p>Abas Órfãs Locais</p><h2 id="kpi-total-resgatadas" style="color: var(--purple-neon);">0</h2></div>
+      <div class="kpi-card"><p>Faltantes na Master</p><h2 id="kpi-total-faltantes" style="color: #F57C00;">0</h2></div>
+      <div class="kpi-card"><p>Alertas Críticos</p><h2 id="kpi-total-criticos" style="color: var(--status-red);">0</h2></div>
+    </div>
+
+    <!-- 🗂️ GRID PRINCIPAL DE ESTADOS -->
+    <div class="uf-grid" id="grid-estados-uf"></div>
+  </div>
+
+  <!-- 🚨 MODAL PRINCIPAL: SINCRONISMO DE ENTRADA DO ECOSSISTEMA -->
+  <div class="modal-overlay" id="modal-resgate">
+    <div class="modal-box">
+      <h3 id="modal-titulo">Processando Operação...</h3>
+      <div class="progress-wrapper">
+        <div class="progress-bar" id="barra-progresso"></div>
+      </div>
+      <div class="terminal-box" id="terminal-logs"></div>
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn-global" id="btn-fechar-modal" onclick="document.getElementById('modal-resgate').style.display='none'">FECHAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🚨 MODAL SECUNDÁRIO FORENSE: EXIBE LISTAGENS DE CARGAS RETIDAS -->
+  <div class="modal-overlay" id="modal-logistica-detalhe">
+    <div class="modal-box" style="width: 1050px; max-width: 95vw;">
+      <h3 id="modal-logistica-titulo" style="color: var(--purple-neon); margin-bottom: 1rem;">Listagem de Romaneios</h3>
+      <div class="terminal-box" id="modal-logistica-conteudo" style="background: #F4F4F6; color: var(--text-main); height: 350px; border: 1px solid rgba(0,0,0,0.05); padding: 1.25rem; overflow-y: auto;"></div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+        <button class="btn-global" onclick="document.getElementById('modal-logistica-detalhe').style.display='none'">FECHAR LISTA</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    
+    // 🌟 LINK WEB APP CENTRALIZADO: Insira a URL gerada no deploy do seu Apps Script V5
+  // const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGFR5tZicDgcl-dTslCI5vfdtYY6EMpOuQ9eGfcbCuHM-RsVLVNWrGbRTLdMWImM5aPA/exec"; //Perfil 1
+   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxhN3DYLc17sloBp5EXFzEdGFe0lGfV_Gz2bpiRH5R2OkBLL1hr8aYhIx5Jus-fnSyt/exec"; //Perfil 2
+    // 💾 CACHE DO ECOSSISTEMA & DICIONÁRIO GEOGRÁFICO
+    let cacheDadosEcosistema = [];
+
+    const MAPA_REGIOES_BR = {
+      'SP': 'SUDESTE', 'RJ': 'SUDESTE', 'MG': 'SUDESTE', 'ES': 'SUDESTE',
+      'PR': 'SUL', 'SC': 'SUL', 'RS': 'SUL',
+      'BA': 'NORDESTE', 'PE': 'NORDESTE', 'CE': 'NORDESTE', 'MA': 'NORDESTE', 
+      'PB': 'NORDESTE', 'RN': 'NORDESTE', 'AL': 'NORDESTE', 'SE': 'NORDESTE', 'PI': 'NORDESTE',
+      'MT': 'CENTRO-OESTE', 'MS': 'CENTRO-OESTE', 'GO': 'CENTRO-OESTE', 'DF': 'CENTRO-OESTE',
+      'AM': 'NORTE', 'PA': 'NORTE', 'RO': 'NORTE', 'RR': 'NORTE', 'AC': 'NORTE', 'TO': 'NORTE', 'AP': 'NORTE'
+    };
+
+    function carregarDadosGlobais() {
+      const grid = document.getElementById("grid-estados-uf");
+      const modal = document.getElementById("modal-resgate");
+      const barra = document.getElementById("barra-progresso");
+      const terminal = document.getElementById("terminal-logs");
+      
+      document.getElementById("modal-titulo").innerText = "Auditoria Global do Ecossistema (54 UFs)";
+      modal.style.display = "flex";
+      barra.style.width = "15%";
+      barra.style.background = "var(--purple-neon)";
+      
+      terminal.innerHTML = "[" + new Date().toLocaleTimeString() + "] 📡 Conectando com a malha de Telemetria...<br>";
+      grid.innerHTML = "<div style='grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem; font-weight: 500;'>📡 Consolidando infraestrutura técnica em RAM...</div>";
+
+      fetch(WEB_APP_URL + "?action=obterDiagnosticoGlobal")
+        .then(response => { if (!response.ok) { throw new Error(response.status); } return response.json(); })
+        .then(dados => {
+          if (!dados.success) {
+            barra.style.width = "100%"; barra.style.background = "var(--status-red)";
+            grid.innerHTML = "<div style='grid-column: 1/-1; text-align: center; color: var(--status-red); padding: 3rem;'>Erro no Servidor.</div>";
+            return;
+          }
+          cacheDadosEcosistema = dados.data;
+          barra.style.width = "100%"; barra.style.background = "var(--status-green)";
+          resetarBotoesFiltro();
+          renderizarCards(cacheDadosEcosistema);
+          calcularKPIDinamicos(cacheDadosEcosistema);
+          setTimeout(() => { modal.style.display = "none"; }, 1000);
+        })
+        .catch(err => { barra.style.width = "100%"; barra.style.background = "var(--status-red)"; });
+    }
+
+    function formatarDataBR(dataString) {
+      if (!dataString || dataString === "Sem registro" || dataString === "ERRO DE CONEXÃO") return dataString;
+      try {
+        const dataObj = new Date(dataString.toString().replace("T", " ").replace("Z", ""));
+        if (isNaN(dataObj.getTime())) return dataString;
+        const dia = String(dataObj.getDate()).padStart(2, '0');
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const ano = dataObj.getFullYear();
+        const hora = String(dataObj.getHours()).padStart(2, '0');
+        const minuto = String(dataObj.getMinutes()).padStart(2, '0');
+        const segundo = String(dataObj.getSeconds()).padStart(2, '0');
+        return dia + "/" + mes + "/" + ano + " " + hora + ":" + minuto + ":" + segundo;
+      } catch (e) { return dataString; }
+    }
+    // 🚀 MOTOR PRO: Renderiza a árvore com Pingms, Payload de linhas e Status de conexão de rede
+    function renderizarCards(listaUfs) {
+      const grid = document.getElementById("grid-estados-uf");
+      grid.innerHTML = "";
+      
+      listaUfs.forEach((uf, index) => {
+        const corClasse = uf.criticos > 0 ? 'bg-red' : (uf.orfas > 0 || uf.faltantes > 0 ? 'bg-yellow' : 'bg-green');
+        const dataFormatadaPronta = formatarDataBR(uf.atualizado_em);
+        
+        const da = uf.detalhes_analiticos || { dia: { concluidos: [], parciais: [], pendentes: [] }, backlog: { concluidos: [], parciais: [], pendentes: [] } };
+        
+        const totalDia = da.dia.concluidos.length + da.dia.parciais.length + da.dia.pendentes.length;
+        const pConcluidosDia = totalDia > 0 ? Math.round((da.dia.concluidos.length / totalDia) * 100) : 0;
+        const pParciaisDia   = totalDia > 0 ? Math.round((da.dia.parciais.length / totalDia) * 100) : 0;
+        const pPendentesDia  = totalDia > 0 ? Math.round((da.dia.pendentes.length / totalDia) * 100) : 0;
+        
+        const qPresosDia = [...da.dia.concluidos, ...da.dia.parciais, ...da.dia.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "").length;
+        const pDispatchedDia = totalDia > 0 ? Math.round(((totalDia - qPresosDia) / totalDia) * 100) : 0;
+
+        const totalBacklog = da.backlog.concluidos.length + da.backlog.parciais.length + da.backlog.pendentes.length;
+        const pParciaisBacklog   = totalBacklog > 0 ? Math.round((da.backlog.parciais.length / totalBacklog) * 100) : 0;
+        const pPendentesBacklog  = totalBacklog > 0 ? Math.round((da.backlog.pendentes.length / totalBacklog) * 100) : 0;
+        
+        const qPresosBacklog = [...da.backlog.concluidos, ...da.backlog.parciais, ...da.backlog.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "").length;
+        const pDispatchedBacklog = totalBacklog > 0 ? Math.round(((totalBacklog - qPresosBacklog) / totalBacklog) * 100) : 0;
+
+        // =========================================================================
+        // 📊 DECODIFICAÇÃO DO PACOTE DE INFRAESTRUTURA V5
+        // =========================================================================
+        const t = da.telemetria || { ping_ms: 0, linhas_prod: 0, celulas_conf_total: 0, status_conexao: "SAUDÁVEL" };
+        
+        const totalCelulas = t.celulas_conf_total || 0;
+        const pConsumo = Math.min(Math.round((totalCelulas / 10000000) * 100), 100);
+        
+        let corBarra = 'var(--status-green)';
+        if (pConsumo >= 90) corBarra = 'var(--status-red)';
+        else if (pConsumo >= 70) corBarra = '#F57C00'; 
+
+        let corPing = '#00C853';
+        if (t.ping_ms > 3500) corPing = 'var(--status-red)';
+        else if (t.ping_ms > 1500) corPing = '#F57C00';
+
+        let textoCelulas = totalCelulas >= 1000000 ? (totalCelulas / 1000000).toFixed(1) + 'M' : (totalCelulas / 1000).toFixed(0) + 'K';
+        let corStatusConexao = t.status_conexao === "SAUDÁVEL" ? '#00C853' : 'var(--status-red)';
+
+        const corContadorBacklog = qPresosBacklog > 0 ? 'color: var(--status-red); font-weight: 800;' : 'color: var(--text-muted);';
+        const corContadorDia = qPresosDia > 0 ? 'color: var(--status-red); font-weight: 800;' : 'color: var(--text-muted);';
+
+        let htmlBarraCelulas = '<div class="cells-progress-container">' +
+                                 '<div class="cells-label-row">' +
+                                   '<span>Uso Células (ID_CONF):</span>' +
+                                   '<span style="font-weight:700; color:' + corBarra + ';">' + textoCelulas + ' (' + pConsumo + '%)</span>' +
+                                 '</div>' +
+                                 '<div class="cells-bg-bar">' +
+                                   '<div class="cells-fill-bar" style="width: ' + pConsumo + '%; background-color: ' + corBarra + ';"></div>' +
+                                 '</div>' +
+                               '</div>';
+
+        let cardHtml = '<div class="uf-card">' +
+            '<div class="uf-header">' +
+              '<div class="uf-title">' + uf.nome_estado + ' (' + uf.sigla + ')</div>' +
+              '<span class="badge-status ' + corClasse + '"></span>' +
+            '</div>' +
+            '<a href="https://google.com' + uf.id_planilha_prod + '" target="_blank" class="sheet-link">🔗 Planilha Produção</a>' +
+            
+            '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem;">' +
+              '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--purple-neon);">📅 ROMANEIOS / BACKLOG</div>' +
+              '<div class="diagnostic-item"><span>Parciais:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'backlog\', \'parciais\'); return false;" style="color:#F57C00;">' + pParciaisBacklog + '% (' + da.backlog.parciais.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Pendentes:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'backlog\', \'pendentes\'); return false;" style="color:var(--status-red);">' + pPendentesBacklog + '% (' + da.backlog.pendentes.length + ')</a></div>' +
+              '<div class="diagnostic-item" style="border-top: 1px dashed rgba(0,0,0,0.03); margin-top: 0.3rem; padding-top: 0.3rem;">' +
+                '<span>Dispatched:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogisticaEspecial(\'' + uf.sigla + '\', \'backlog\'); return false;" style="color:#00C853; font-weight:700;">' + pDispatchedBacklog + '% <span style="color:var(--text-muted); font-weight:400; margin:0 0.2rem;">/</span> <span style="' + corContadorBacklog + '">' + qPresosBacklog + '</span></a>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(0,0,0,0.03);">' +
+              '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--purple-neon);">☀️ ROMANEIOS / DIA</div>' +
+              '<div class="diagnostic-item"><span>Concluídos:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'dia\', \'concluidos\'); return false;">' + pConcluidosDia + '% (' + da.dia.concluidos.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Parciais:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'dia\', \'parciais\'); return false;" style="color:#F57C00;">' + pParciaisDia + '% (' + da.dia.parciais.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Pendentes:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'dia\', \'pendentes\'); return false;" style="color:var(--status-red);">' + pPendentesDia + '% (' + da.dia.pendentes.length + ')</a></div>' +
+              '<div class="diagnostic-item" style="border-top: 1px dashed rgba(0,0,0,0.03); margin-top: 0.3rem; padding-top: 0.3rem;">' +
+                '<span>Dispatched:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogisticaEspecial(\'' + uf.sigla + '\', \'dia\'); return false;" style="color:#00C853; font-weight:700;">' + pDispatchedDia + '% <span style="color:var(--text-muted); font-weight:400; margin:0 0.2rem;">/</span> <span style="' + corContadorDia + '">' + qPresosDia + '</span></a>' +
+              '</div>' +
+            '</div>' +
+
+            /* 🏗️ TELEMETRIA EXPANDIDA DE INFRAESTRUTURA GOOGLE WORKSPACE */
+            '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(0,0,0,0.03);">' +
+              '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--text-muted);">🏗️ TELEMETRIA / TI</div>' +
+              '<div class="diagnostic-item"><span>Canal G-Drive:</span><span style="color:' + corStatusConexao + '; font-weight:700;">' + t.status_conexao + '</span></div>' +
+              '<div class="diagnostic-item"><span>Latência (Ping):</span><span style="color:' + corPing + '; font-weight:700;">' + t.ping_ms + ' ms</span></div>' +
+              '<div class="diagnostic-item"><span>Base Ocupada:</span><span>' + (t.linhas_prod || 0) + ' linhas</span></div>' +
+              
+              htmlBarraCelulas +
+
+              '<div class="diagnostic-item" style="border-top: 1px dashed #E5E5EA; margin-top:0.6rem; padding-top:0.4rem; font-size:0.75rem;">' +
+                '<span>Atualizado em:</span><span style="font-weight:500; color:var(--text-muted);">' + dataFormatadaPronta + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="action-row-card"><button class="btn-action-sm" onclick="forcarResgateLocal(\'' + uf.sigla + '\', \'' + uf.id_planilha_prod + '\')">Resgatar Órfãs</button></div>' +
+          '</div>';
+          
+        grid.innerHTML += cardHtml;
+      });
+    }
+    function abrirJanelaLogistica(ufSigla, tipoPeriodo, categoriaStatus) {
+      const siglaTextoStr = String(ufSigla).trim().toUpperCase();
+      const ufAlvo = cacheDadosEcosistema.find(uf => uf.sigla.toUpperCase() === siglaTextoStr);
+      if (!ufAlvo) return;
+      
+      const listaCargas = ufAlvo.detalhes_analiticos[tipoPeriodo][categoriaStatus] || [];
+      document.getElementById("modal-logistica-titulo").innerText = ufAlvo.nome_estado + " (" + ufAlvo.sigla + ") - " + tipoPeriodo.toUpperCase() + " [" + categoriaStatus.toUpperCase() + "]";
+      const caixaConteudo = document.getElementById("modal-logistica-conteudo");
+      
+      if (listaCargas.length === 0) {
+        caixaConteudo.innerHTML = "<div style='text-align:center; padding-top:4rem; color:var(--text-muted); font-weight:500;'>Nenhum romaneio ativo mapeado nesta categoria.</div>";
+      } else {
+        let tabelaHtml = "<table style='width:100%; border-collapse:collapse; font-size:0.82rem; text-align:left;'>" +
+                            "<thead>" +
+                              "<tr style='border-bottom:2px solid rgba(0,0,0,0.08); color:var(--purple-neon); font-weight:700;'>" +
+                                "<th style='padding:0.6rem 0.4rem;'>📦 ID ROMANEIO</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>🚛 TRANSPORTADORA</th>" +
+                                "<th style='padding:0.6rem 0.4rem; text-align:center;'>📋 PEDIDOS</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>⚠️ INTERCORRÊNCIA (CLIQUE P/ EXPANDIR)</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>📅 DT IMPORT</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>⚡ DISPATCH</th>" +
+                              "</tr>" +
+                            "</thead>" +
+                            "<tbody>";
+        
+        listaCargas.forEach(c => {
+          let textoCompleto = c.intercorrencia || "Sem ocorrências";
+          let textoOcorrencia = textoCompleto.length > 40 ? textoCompleto.substring(0, 37) + "..." : textoCompleto;
+          let textoTituloEscapado = textoCompleto.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+          let textoCurtoEscapado = textoOcorrencia.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+          
+          tabelaHtml += "<tr style='border-bottom:1px solid rgba(0,0,0,0.04); font-weight:500; vertical-align:top;'>" +
+                           "<td style='padding:0.6rem 0.4rem; font-weight:700; font-family:monospace;'>" + (c.romaneio || "Sem ID") + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; color:#333;'>" + (c.transp || "Não Informada") + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; text-align:center; font-weight:600; color:var(--purple-neon);'>" + (c.pedidos || 0) + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; max-width:320px; color:var(--text-muted); font-size:0.78rem; cursor:pointer;' title='" + textoTituloEscapado + "' data-short='" + textoCurtoEscapado + "' data-full='" + textoTituloEscapado + "' data-open='0' onclick='alternarTextoOcorrencia(this)'>" + textoOcorrencia + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; color:#111; font-size:0.78rem; white-space:nowrap;'> " + (c.dt_import || "Sem registro") + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; color:#00C853; font-weight:600; font-size:0.78rem; white-space:nowrap;'> " + (c.dispatch || "Aguardando") + "</td>" +
+                         "</tr>";
+        });
+        
+        tabelaHtml += "</tbody></table>"; 
+        caixaConteudo.innerHTML = tabelaHtml;
+      }
+      document.getElementById("modal-logistica-detalhe").style.display = "flex";
+    }
+
+      function alternarTextoOcorrencia(elementoCelular) {
+      const statusAberto = elementoCelular.getAttribute("data-open");
+      const textoCurto = elementoCelular.getAttribute("data-short");
+      const textoCompleto = elementoCelular.getAttribute("data-full");
+      if (statusAberto === "1") { 
+        elementoCelular.setAttribute("data-open", "0"); 
+        elementoCelular.innerHTML = textoCurto; 
+      } else { 
+        elementoCelular.setAttribute("data-open", "1"); 
+        elementoCelular.innerHTML = "<div style='white-space:normal; background:var(--purple-dim); color:var(--purple-neon); padding:0.4rem; border-radius:6px; font-weight:600; line-height:1.3; margin-top:2px;'>" + textoCompleto + "</div>"; 
+      }
+    }
+
+    function abrirJanelaLogisticaEspecial(ufSigla, tipoPeriodo) {
+      const siglaTextoStr = String(ufSigla).trim().toUpperCase();
+      const ufAlvo = cacheDadosEcosistema.find(uf => uf.sigla.toUpperCase() === siglaTextoStr);
+      if (!ufAlvo) return;
+      
+      const da = ufAlvo.detalhes_analiticos || { dia: { concluidos: [], parciais: [], pendentes: [] }, backlog: { concluidos: [], parciais: [], pendentes: [] } };
+      const todosPeriodo = [...da[tipoPeriodo].concluidos, ...da[tipoPeriodo].parciais, ...da[tipoPeriodo].pendentes];
+      const listaPresos = todosPeriodo.filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "");
+      
+      document.getElementById("modal-logistica-titulo").innerText = ufAlvo.nome_estado + " (" + ufAlvo.sigla + ") - PENDENTES DE SAÍDA " + tipoPeriodo.toUpperCase();
+      const caixaConteudo = document.getElementById("modal-logistica-conteudo");
+      
+      if (listaPresos.length === 0) {
+        caixaConteudo.innerHTML = "<div style='text-align:center; padding-top:4rem; color:var(--status-green); font-weight:600;'>🚀 100% Despachado! Nenhuma carga presa nesta sessão.</div>";
+      } else {
+        let tabelaHtml = "<table style='width:100%; border-collapse:collapse; font-size:0.82rem; text-align:left;'>" +
+                            "<thead>" +
+                              "<tr style='border-bottom:2px solid rgba(0,0,0,0.08); color:var(--status-red); font-weight:700;'>" +
+                                "<th style='padding:0.6rem 0.4rem;'>📦 ID ROMANEIO PRESO</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>🚛 TRANSPORTADORA</th>" +
+                                "<th style='padding:0.6rem 0.4rem; text-align:center;'>📋 PEDIDOS</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>📅 DT IMPORT</th>" +
+                                "<th style='padding:0.6rem 0.4rem;'>⚠️ STATUS DISPATCH</th>" +
+                              "</tr>" +
+                            "</thead>" +
+                            "<tbody>";
+        
+        listaPresos.forEach(c => { 
+          tabelaHtml += "<tr style='border-bottom:1px solid rgba(0,0,0,0.04); font-weight:500;'>" +
+                           "<td style='padding:0.6rem 0.4rem; font-weight:700; font-family:monospace;'>" + (c.romaneio || "Sem ID") + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; color:#333;'>" + (c.transp || "Não Informada") + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; text-align:center; font-weight:600; color:var(--purple-neon);'>" + (c.pedidos || 0) + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; color:var(--text-muted); font-size:0.78rem;'> " + (c.dt_import || "Sem registro") + "</td>" +
+                           "<td style='padding:0.6rem 0.4rem; color:var(--status-red); font-weight:700; font-size:0.78rem;'>🚨 " + (c.dispatch || "Aguardando") + "</td>" +
+                         "</tr>"; 
+        });
+        
+        tabelaHtml += "</tbody></table>"; 
+        caixaConteudo.innerHTML = tabelaHtml;
+      }
+      document.getElementById("modal-logistica-detalhe").style.display = "flex";
+    }
+    function buscarUfPorTexto() {
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      const btnTodos = document.querySelector(".filter-row button:nth-child(2)");
+      if (btnTodos) btnTodos.classList.add('active');
+
+      const termoDigitado = document.getElementById("input-busca-uf").value.trim().toUpperCase();
+
+      if (termoDigitado === "") {
+        renderizarCards(cacheDadosEcosistema);
+        return;
+      }
+
+      const resultadoFiltrada = cacheDadosEcosistema.filter(uf => { 
+        const nomeEstado = uf.nome_estado ? uf.nome_estado.toUpperCase() : "";
+        const siglaEstado = uf.sigla ? uf.sigla.toUpperCase() : "";
+        return (nomeEstado.indexOf(termoDigitado) !== -1 || siglaEstado.indexOf(termoDigitado) !== -1); 
+      });
+      renderizarCards(resultadoFiltrada);
+    }
+
+    function calcularKPIDinamicos(listaUfs) {
+      let somaOrfas = 0; let somaFaltantes = 0; let somaCriticos = 0;
+      listaUfs.forEach(uf => { 
+        somaOrfas += parseInt(uf.orfas) || 0; 
+        somaFaltantes += parseInt(uf.faltantes) || 0; 
+        somaCriticos += parseInt(uf.criticos) || 0; 
+      });
+      document.getElementById("kpi-total-sheets").innerText = listaUfs.length;
+      document.getElementById("kpi-total-resgatadas").innerText = somaOrfas;
+      document.getElementById("kpi-total-faltantes").innerText = somaFaltantes;
+      document.getElementById("kpi-total-criticos").innerText = somaCriticos;
+    }
+
+    function filtrarRegiao(regiaoAlvo, botaoClicado) {
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      botaoClicado.classList.add('active');
+      if (regiaoAlvo === 'TODOS') { renderizarCards(cacheDadosEcosistema); return; }
+      const listaFiltrada = cacheDadosEcosistema.filter(uf => (MAPA_REGIOES_BR[uf.sigla.toUpperCase()] || 'OUTROS') === regiaoAlvo);
+      renderizarCards(listaFiltrada);
+    }
+
+    function filtrarApenasCriticos(botaoClicado) {
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      botaoClicado.classList.add('active');
+      renderizarCards(cacheDadosEcosistema.filter(uf => parseInt(uf.criticos) > 0));
+    }
+
+    function resetarBotoesFiltro() {
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      const btnTodos = document.querySelector(".filter-row button:nth-child(2)");
+      if (btnTodos) btnTodos.classList.add('active');
+    }
+
+    function forcarResgateLocal(sigla, idPlanilha) {
+      if (confirm("⚠️ ATENÇÃO: Deseja resgatar bipes órfãos de " + sigla + " agora?")) {
+        const modal = document.getElementById("modal-resgate");
+        const barra = document.getElementById("barra-progresso");
+        document.getElementById("modal-titulo").innerText = "Contingência: " + sigla;
+        modal.style.display = "flex"; barra.style.width = "10%";
+        fetch(WEB_APP_URL + "?action=forcarResgateUf&id_planilha=" + idPlanilha)
+          .then(r => r.json()).then(res => { if (res.success) { barra.style.width = "100%"; carregarDadosGlobais(); } });
+      }
+    }
+
+    let sistemaEstabilizadoComSucesso = false;
+    function dispararAuditoriaFrenetica() {
+      if (sistemaEstabilizadoComSucesso) return;
+      fetch(WEB_APP_URL + "?action=obterDiagnosticoGlobal")
+        .then(res => { if (!res.ok) { throw new Error(res.status); } return res.json(); })
+        .then(dados => {
+          if (dados.success) {
+            if (dados.initializing) { setTimeout(dispararAuditoriaFrenetica, 5000); return; }
+            sistemaEstabilizadoComSucesso = true;
+            cacheDadosEcosistema = dados.data;
+            renderizarCards(dados.data);
+            calcularKPIDinamicos(dados.data);
+            setTimeout(() => { document.getElementById("modal-resgate").style.display = "none"; }, 1200);
+          }
+        })
+        .catch(err => { 
+          // ⏱️ Polling resiliente de 12s para ignorar erros 404 e manter a busca ativa
+          setTimeout(dispararAuditoriaFrenetica, 12000); 
+        });
+    }
+
+    window.onload = dispararAuditoriaFrenetica;
+  </script>
+</body>
+</html>
